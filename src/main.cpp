@@ -1,29 +1,45 @@
 // clang-format off
 #include <algorithm>
 #include <cstring>
+#include <ostream>
+#include <string>
 #include <vector>
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
-#include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_raii.hpp>
+#include <vulkan/vk_platform.h>
 #include <cstdint>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
-#include <vulkan/vulkan_structs.hpp>
 // clang-format on
 
 constexpr uint32_t WIDTH = 800;
 constexpr uint32_t HEIGHT = 600;
 
 const std::vector validationLayers = {"VK_LAYER_KHRONOS_validation"};
+const std::vector<const char *> deviceExtensions = {
+    vk::KHRSwapchainExtensionName, vk::KHRSpirv14ExtensionName,
+    vk::KHRSynchronization2ExtensionName,
+    vk::KHRCreateRenderpass2ExtensionName};
 
 #ifdef NDEBUG
 constexpr bool enableValidationLayers = false;
 #else
 constexpr bool enableValidationLayers = true;
 #endif
+
+std::vector<const char *> getRequiredExtensions() {
+  uint32_t glfwExtensionCount = 0;
+  auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+  std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+  if (enableValidationLayers) {
+    extensions.push_back(vk::EXTDebugUtilsExtensionName);
+  }
+  return extensions;
+}
 
 class HelloTriangleApplication {
 public:
@@ -38,6 +54,9 @@ private:
   GLFWwindow *window;
   vk::raii::Context context;
   vk::raii::Instance instance = nullptr;
+  vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr;
+  vk::raii::PhysicalDevice physicalDevice = nullptr;
+  vk::raii::Device device = nullptr;
 
   void initWindow() {
     glfwInit();
@@ -46,7 +65,12 @@ private:
     window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
   }
 
-  void initVulkan() { createInstance(); }
+  void initVulkan() {
+    createInstance();
+    setupDebugMessenger();
+    pickPhysicalDevice();
+    createLogicalDevice();
+  }
 
   void createInstance() {
     constexpr vk::ApplicationInfo appInfo{
@@ -70,32 +94,84 @@ private:
             })) {
       throw std::runtime_error("One or more required layers are not supported");
     }
-    uint32_t glfwExtensionCount = 0;
-    auto glfwExtensions =
-        glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-    auto extensionProperties = context.enumerateInstanceExtensionProperties();
-    for (uint32_t i = 0; i < glfwExtensionCount; i++) {
-      if (std::ranges::none_of(extensionProperties,
-                               [glfwExtension = glfwExtensions[i]](
-                                   auto const &extensionProperty) {
-                                 return strcmp(extensionProperty.extensionName,
-                                               glfwExtension) == 0;
-                               }))
-        throw std::runtime_error("Required glfw extension not supported: " +
-                                 std::string(glfwExtensions[i]));
+    auto extensions = getRequiredExtensions();
+    auto extentionProperties = context.enumerateInstanceExtensionProperties();
+    for (auto const &extension : extensions) {
+      if (std::ranges::none_of(
+              extentionProperties, [extension](auto const &extensionProperty) {
+                return strcmp(extensionProperty.extensionName, extension) == 0;
+              })) {
+        throw std::runtime_error("Required extension not supported: " +
+                                 std::string(extension));
+      }
     }
 
     vk::InstanceCreateInfo createInfo{
         .pApplicationInfo = &appInfo,
         .enabledLayerCount = static_cast<uint32_t>(requiredLayers.size()),
         .ppEnabledLayerNames = requiredLayers.data(),
-        .enabledExtensionCount = glfwExtensionCount,
-        .ppEnabledExtensionNames = glfwExtensions,
+        .enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
+        .ppEnabledExtensionNames = extensions.data(),
     };
 
     instance = vk::raii::Instance(context, createInfo);
   }
+
+  void setupDebugMessenger() {
+    if (!enableValidationLayers)
+      return;
+
+    vk::DebugUtilsMessageSeverityFlagsEXT severityFlags(
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+        vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
+    vk::DebugUtilsMessageTypeFlagsEXT messageTypeFlags(
+        vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+        vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
+        vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation);
+    vk::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfoEXT{
+        .messageSeverity = severityFlags,
+        .messageType = messageTypeFlags,
+        .pfnUserCallback = &debugCallback};
+    debugMessenger =
+        instance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfoEXT);
+  }
+
+  void pickPhysicalDevice() {
+    std::vector<vk::raii::PhysicalDevice> devices =
+        instance.enumeratePhysicalDevices();
+    const auto devIter = std::ranges::find_if(devices, [&](auto const &device) {
+      auto queueFamilies = device.getQueueFamilyProperties();
+      bool isSuitable = device.getProperties().apiVersion >= VK_API_VERSION_1_3;
+      const auto qfpIter = std::ranges::find_if(
+          queueFamilies, [](vk::QueueFamilyProperties const &qfp) {
+            return (qfp.queueFlags & vk::QueueFlagBits::eGraphics) !=
+                   static_cast<vk::QueueFlags>(0);
+          });
+      isSuitable = isSuitable && (qfpIter != queueFamilies.end());
+      auto extensions = device.enumerateDeviceExtensionProperties();
+      bool found = true;
+      for (auto const &extension : deviceExtensions) {
+        auto extensionIter =
+            std::ranges::find_if(extensions, [extension](auto const &ext) {
+              return strcmp(ext.extensionName, extension) == 0;
+            });
+        found = found && extensionIter != extensions.end();
+      }
+      isSuitable = isSuitable && found;
+      printf("\n");
+      if (isSuitable) {
+        physicalDevice = device;
+      }
+      return isSuitable;
+    });
+    if (devIter == devices.end()) {
+      throw std::runtime_error("failed to find a suitable GPU");
+    }
+  }
+
+  void createLogicalDevice() {}
 
   void mainLoop() {
     while (!glfwWindowShouldClose(window)) {
@@ -106,6 +182,16 @@ private:
   void cleanup() {
     glfwDestroyWindow(window);
     glfwTerminate();
+  }
+
+  static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
+      vk::DebugUtilsMessageSeverityFlagBitsEXT severity,
+      vk::DebugUtilsMessageTypeFlagsEXT type,
+      const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData, void *) {
+    std::cerr << "validation layer: type " << to_string(type)
+              << " msg: " << pCallbackData->pMessage << std::endl;
+
+    return vk::False;
   }
 };
 ;
