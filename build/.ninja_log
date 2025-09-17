@@ -1,8 +1,0 @@
-# ninja log v6
-1	13	1758078142143710795	/home/matty/vulkan-tutorial/build/CMakeFiles/cmake.verify_globs	df2a69a0b2877ddc
-13	219	1758078142154568224	CMakeFiles/VulkanTutorial.dir/src/main.cpp.o.ddi	b2a59865b96d5950
-219	230	1758078142372297028	CMakeFiles/VulkanTutorial.dir/CXX.dd	5d4a45e750a242f6
-219	230	1758078142372297028	CMakeFiles/VulkanTutorial.dir/CXXModules.json	5d4a45e750a242f6
-219	230	1758078142372297028	CMakeFiles/VulkanTutorial.dir/src/main.cpp.o.modmap	5d4a45e750a242f6
-230	4231	1758078142372297028	CMakeFiles/VulkanTutorial.dir/src/main.cpp.o	306239fd2b5ff4c7
-4232	4307	1758078146374265775	VulkanTutorial	efeadf171639654a

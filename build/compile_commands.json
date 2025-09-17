@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/home/matty/vulkan-tutorial/build",
-  "command": "/usr/bin/c++ -I/home/matty/vulkan-tutorial/include -isystem /home/matty/vulkan-sdk/1.4.321.1/x86_64/include -std=gnu++23 -Wall -Wextra -g -fmodules-ts -fmodule-mapper=CMakeFiles/VulkanTutorial.dir/src/main.cpp.o.modmap -MD -fdeps-format=p1689r5 -x c++ -o CMakeFiles/VulkanTutorial.dir/src/main.cpp.o -c /home/matty/vulkan-tutorial/src/main.cpp",
-  "file": "/home/matty/vulkan-tutorial/src/main.cpp",
-  "output": "/home/matty/vulkan-tutorial/build/CMakeFiles/VulkanTutorial.dir/src/main.cpp.o"
-}
-]
