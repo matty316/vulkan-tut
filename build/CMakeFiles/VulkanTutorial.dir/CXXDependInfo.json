@@ -1,0 +1,31 @@
+{
+	"bmi-installation" : null,
+	"compiler-frontend-variant" : "GNU",
+	"compiler-id" : "GNU",
+	"compiler-simulate-id" : "",
+	"config" : "",
+	"cxx-modules" : {},
+	"database-info" : null,
+	"dir-cur-bld" : "/home/matty/vulkan-tutorial/build",
+	"dir-cur-src" : "/home/matty/vulkan-tutorial",
+	"dir-top-bld" : "/home/matty/vulkan-tutorial/build",
+	"dir-top-src" : "/home/matty/vulkan-tutorial",
+	"exports" : [],
+	"forward-modules-from-target-dirs" : [],
+	"include-dirs" : 
+	[
+		"/home/matty/vulkan-tutorial/include",
+		"/home/matty/vulkan-sdk/1.4.321.1/x86_64/include"
+	],
+	"language" : "CXX",
+	"linked-target-dirs" : [],
+	"module-dir" : "/home/matty/vulkan-tutorial/build/CMakeFiles/VulkanTutorial.dir",
+	"sources" : 
+	{
+		"CMakeFiles/VulkanTutorial.dir/src/main.cpp.o" : 
+		{
+			"language" : "CXX",
+			"source" : "/home/matty/vulkan-tutorial/src/main.cpp"
+		}
+	}
+}
