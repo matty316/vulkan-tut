@@ -1,3 +1,4 @@
 build
 thirdParty/libglfw3.a
+.DS_Store
 .cache/clangd/index
