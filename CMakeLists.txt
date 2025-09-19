@@ -10,6 +10,13 @@ file(GLOB_RECURSE MY_RESOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/re
 
 add_executable(VulkanTutorial "${MY_SOURCES}" "${MY_HEADERS}" "${MY_RESOURCES}")
 target_include_directories(VulkanTutorial PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
+if(APPLE)
+  find_library(Cocoa Cocoa REQUIRED)
+  find_library(IOKit IOKit REQUIRED)
+  find_library(CoreVideo CoreVideo REQUIRED)
+  target_link_libraries(VulkanTutorial PRIVATE ${Cocoa} ${IOKit} ${CoreVideo})
+endif()
+
 target_link_libraries(VulkanTutorial PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/thirdParty/libglfw3.a)
 target_link_libraries(VulkanTutorial PRIVATE Vulkan::Vulkan)
 target_compile_options(VulkanTutorial PRIVATE -Wall -Wextra -g)
