@@ -1,2 +1,3 @@
 build
+thirdParty/libglfw3.a
 .cache/clangd/index
